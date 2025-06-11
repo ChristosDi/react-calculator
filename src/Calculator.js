@@ -8,6 +8,7 @@ import {
   evaluateExpression} from './utils/calculatorLogic'
 import getButtonClass from './utils/getButtonClass';
 import './Calculator.css';
+import canAddZero from './utils/canAddZero.js';
 
 function Calculator() {
   //hook for Calculator's Screen manipulation
@@ -42,7 +43,7 @@ function Calculator() {
       const lastChar = existingValue.slice(-1);
 
       //prevent double operators
-      if('+-*/'.includes(lastChar)){
+      if('+-*/.'.includes(lastChar)){
         return existingValue;
       }
       //otherwise safe to append the operator
@@ -79,24 +80,55 @@ function Calculator() {
       <div className="button-grid">
 
         {/*Creates Buttons using map function*/} 
-        {buttons.map((btn,index)=>(
-          <Button 
-          key={index} 
-          value={btn.value} 
-          className={getButtonClass(btn)}
-          onClick={ 
-            btn.type === 'number'
-            ? (value) => setScreenValue(existingValue=>{
-              if (resultShown) {
-                setResultShown(false)//reset 
-                return value.toString();//start new calculation
+        <div className="calculator-buttons">
+          {buttons.map((btn, index) => (
+            <Button
+              key={index}
+              value={btn.value}
+              className={getButtonClass(btn.value)}
+              onClick={
+                btn.type === 'number'
+                  ? (value) => setScreenValue(existingValue => {
+                      if (resultShown) {
+                        setResultShown(false);
+                        return value.toString();
+                      }
+                      if(
+                        existingValue==="0"&& 
+                        !isNaN(value) &&
+                        value!==0
+                      ){
+                        return value.toString();
+                      }
+                      const operators = "+-*/";
+                      const lastOperatorIndex = Math.max(
+                        existingValue.lastIndexOf("+"),
+                        existingValue.lastIndexOf("-"),
+                        existingValue.lastIndexOf("*"),
+                        existingValue.lastIndexOf("/")
+                      );
+                      if (
+                        lastOperatorIndex !== -1 &&                                  // there is an operator
+                        existingValue.length > lastOperatorIndex + 1 &&              // there's a number after operator
+                        existingValue.slice(lastOperatorIndex + 1) === "0" &&        // that number is "0"
+                        !isNaN(value) && value !== 0                                 // and user pressed another number (not 0)
+                      ) {
+                        // Replace the zero after operator with the new number
+                        return (
+                          existingValue.slice(0, lastOperatorIndex + 1) +
+                          value.toString()
+                        );
+                      }
+                      if (value === 0 && !canAddZero(existingValue)) {
+                        return existingValue;
+                      }
+                      return existingValue + value.toString();
+                    })
+                  : (value) => handleOperatorClick(value)
               }
-              return existingValue + value.toString();
-            })
-            : (value) => handleOperatorClick(value)
-          } 
-          />
-        ))}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

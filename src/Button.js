@@ -1,8 +1,12 @@
 import React from 'react';
-
-function Button({ value, onClick }) {
+/**
+ * @component
+ * @param {*} param0 
+ * @returns 
+ */
+function Button({ value, onClick, className }) {
   return (
-    <button onClick={()=>onClick(value)} >{/*on click informs parent which value was pressed*/}
+    <button className={className} onClick={()=>onClick(value)} >{/*on click informs parent which value was pressed*/}
       {value}
     </button>
   );

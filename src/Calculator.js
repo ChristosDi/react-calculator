@@ -8,17 +8,36 @@ import {
   evaluateExpression} from './utils/calculatorLogic'
 import getButtonClass from './utils/getButtonClass';
 import './Calculator.css';
-import canAddZero from './utils/canAddZero.js';
+import handleNumberInput from './utils/handleNumberInput.js';
 
+
+/**
+ * Calculator React Functional Component
+ * 
+ * This component renders a fully functional calculator interface using React hooks. 
+ * Users can perform basic arithmetic operations with support for decimals and clear/reset functionality.
+ * The component prevents invalid calculator inputs such as multiple leading zeros and consecutive operators.
+ * 
+ * Features:
+ * - Numeric and operator button rendering using dynamic mapping.
+ * - Proper screen display management and input sanitization.
+ * - No leading zeroes allowed (except after decimal), and no multiple operators in sequence.
+ * - Evaluates mathematical expressions safely.
+ * - iPhone-like visual styling supported via CSS classes.
+ * 
+ * @component
+ * @returns {JSX.Element} The calculator user interface.
+ */
 function Calculator() {
-  //hook for Calculator's Screen manipulation
+  // State for the calculator display value
   const [screenValue, setScreenValue] = useState(""); 
-  //state to track if result was just shown after pressing the evaluation button
+  // State to track if a result was just shown after pressing "="
   const [resultShown,setResultShown]=useState(false);
-  //Array of operator values
+
+  // Operator button values (includes dot for decimal and C for clear)
   const operatorValues =['+', '-', '*', '/', 'C', '=', "."];
 
-  //Creates an array of all buttons of the calculator
+  // All calculator buttons as objects with {type, value}
   const buttons = [ 
     //Creates an array of numbers[0,1,...,9]
     ...Array.from({length:10} , (_,index)=>({type:'number', value: index})),
@@ -28,30 +47,38 @@ function Calculator() {
 
   
 
-  // function to handle operator logic
+  /**
+   * Handles appending operators to the display, 
+   * preventing multiple sequential operators or invalid placements.
+   * 
+   * @param {string} operator - The operator value to append.
+   */
   const handleOperator = (operator)=>{
-     // Reset resultShown when operator is pressed after evaluation
+    // Reset resultShown when operator is pressed after evaluation
     if (resultShown) {
       setResultShown(false);
     }
     setScreenValue((existingValue)=>{
       if(existingValue===''){
-        //if screen is empty allow only minus at the start
+        // Only allow minus as the first operator (for negative numbers)
         return operator==='-'?'-':'';
       }
 
       const lastChar = existingValue.slice(-1);
-
-      //prevent double operators
+      //prevent double operators or operator after dot
       if('+-*/.'.includes(lastChar)){
         return existingValue;
       }
-      //otherwise safe to append the operator
+      // Append operator if valid
       return existingValue+ operator;
     });
   };
 
-  //excecutes operation according to what the operator is
+  /**
+   * Handles operator button clicks, including clear (C) and evaluation (=).
+   * 
+   * @param {string} operator - The operator or action pressed.
+   */
   const handleOperatorClick = (operator)=>{
     if(operator=='C'){
       //clear command, sets screen to 0
@@ -73,13 +100,14 @@ function Calculator() {
       handleOperator(operator);
     }
   }
-
+  // JSX Render 
   return (
     <div className="calculator-container">
+      {/* Calculator Display */}
       <CalculatorScreen className="calculator-screen" value={screenValue} />
       <div className="button-grid">
 
-        {/*Creates Buttons using map function*/} 
+        {/* Render buttons using mapping */}
         <div className="calculator-buttons">
           {buttons.map((btn, index) => (
             <Button
@@ -89,40 +117,12 @@ function Calculator() {
               onClick={
                 btn.type === 'number'
                   ? (value) => setScreenValue(existingValue => {
+                      // Start new calculation after evaluation
                       if (resultShown) {
                         setResultShown(false);
                         return value.toString();
                       }
-                      if(
-                        existingValue==="0"&& 
-                        !isNaN(value) &&
-                        value!==0
-                      ){
-                        return value.toString();
-                      }
-                      const operators = "+-*/";
-                      const lastOperatorIndex = Math.max(
-                        existingValue.lastIndexOf("+"),
-                        existingValue.lastIndexOf("-"),
-                        existingValue.lastIndexOf("*"),
-                        existingValue.lastIndexOf("/")
-                      );
-                      if (
-                        lastOperatorIndex !== -1 &&                                  // there is an operator
-                        existingValue.length > lastOperatorIndex + 1 &&              // there's a number after operator
-                        existingValue.slice(lastOperatorIndex + 1) === "0" &&        // that number is "0"
-                        !isNaN(value) && value !== 0                                 // and user pressed another number (not 0)
-                      ) {
-                        // Replace the zero after operator with the new number
-                        return (
-                          existingValue.slice(0, lastOperatorIndex + 1) +
-                          value.toString()
-                        );
-                      }
-                      if (value === 0 && !canAddZero(existingValue)) {
-                        return existingValue;
-                      }
-                      return existingValue + value.toString();
+                      return handleNumberInput(existingValue, value);
                     })
                   : (value) => handleOperatorClick(value)
               }
